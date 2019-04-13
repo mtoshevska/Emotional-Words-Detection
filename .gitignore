@@ -153,4 +153,4 @@ fabric.properties
 
 # Large files
 .idea/*
-dataset/
+data/
