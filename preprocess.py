@@ -8,6 +8,7 @@ from nltk.corpus import stopwords
 from string import punctuation
 from lemmatization import lemmatize
 from tqdm import tqdm
+from valence import assign_valence
 
 
 def tokenize_review(review):
@@ -124,6 +125,33 @@ def create_vocabulary(r1, r2):
     pd.DataFrame(list(set(filtered_vocabulary))).to_csv(f'data/vocabulary_{str(r1)}_{str(r2)}.csv')
 
 
+def assign_valence_vocabulary(r1, r2):
+    vocabulary = pd.read_csv(f'data/vocabulary_{str(r1)}_{str(r2)}.csv', index_col=[0]).get_values().flatten()
+    valences_nrc = assign_valence(vocabulary, ['afinn', 'nrc-hashtag', 'nrc-vad'])
+    pd.DataFrame().from_dict(valences_nrc, orient='index').to_csv(f'data/vocabulary_{str(r1)}_{str(r2)}_val_nrc.csv')
+    valences_yelp = assign_valence(vocabulary, ['yelp-sentiment'])
+    pd.DataFrame().from_dict(valences_yelp, orient='index').to_csv(f'data/vocabulary_{str(r1)}_{str(r2)}_val_yelp.csv')
+
+
+def assign_valence_reviews(r1, r2):
+    with open(f'data/yelp_reviews_lemmas_{r1}_{r2}.pkl', 'rb') as doc_r:
+        data = pickle.load(doc_r)
+    val_nrc = pd.read_csv(f'data/vocabulary_{str(r1)}_{str(r2)}_val_nrc.csv', index_col=[0])
+    lemmas_nrc = dict()
+    for _, review_id in zip(tqdm(list(range(len(list(data.keys()))))), list(data.keys())):
+        lemmas = data[review_id]
+        lemmas_nrc[review_id] = [(lemma, round(val_nrc.loc[lemma][0], 5)) for lemma in lemmas if lemma in val_nrc.index]
+    with open(f'data/yelp_reviews_lemmas_val_nrc_{r1}_{r2}.pkl', 'wb') as doc_w:
+        pickle.dump(lemmas_nrc, doc_w)
+    val_y = pd.read_csv(f'data/vocabulary_{str(r1)}_{str(r2)}_val_yelp.csv', index_col=[0])
+    lemmas_yelp = dict()
+    for _, review_id in zip(tqdm(list(range(len(list(data.keys()))))), list(data.keys())):
+        lemmas = data[review_id]
+        lemmas_yelp[review_id] = [(lemma, round(val_y.loc[lemma][0], 5)) for lemma in lemmas if lemma in val_y.index]
+    with open(f'data/yelp_reviews_lemmas_val_yelp_{r1}_{r2}.pkl', 'wb') as doc_w:
+        pickle.dump(lemmas_yelp, doc_w)
+
+
 def create_user_review_frequencies(file_name):
     frequencies = dict()
     with open(file_name, 'r', encoding='utf-8') as doc:
@@ -167,5 +195,9 @@ if __name__ == '__main__':
     # tokenize_reviews(10, 500)
     # lemmatize_reviews(50, 500)
     # lemmatize_reviews(10, 500)
-    create_vocabulary(50, 500)
-    create_vocabulary(10, 500)
+    # create_vocabulary(50, 500)
+    # create_vocabulary(10, 500)
+    # assign_valence_vocabulary(50, 500)
+    # assign_valence_vocabulary(10, 500)
+    assign_valence_reviews(50, 500)
+    assign_valence_reviews(10, 500)
