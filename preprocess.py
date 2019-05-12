@@ -137,19 +137,29 @@ def assign_valence_reviews(r1, r2):
     with open(f'data/yelp_reviews_lemmas_{r1}_{r2}.pkl', 'rb') as doc_r:
         data = pickle.load(doc_r)
     val_nrc = pd.read_csv(f'data/vocabulary_{str(r1)}_{str(r2)}_val_nrc.csv', index_col=[0])
-    lemmas_nrc = dict()
-    for _, review_id in zip(tqdm(list(range(len(list(data.keys()))))), list(data.keys())):
-        lemmas = data[review_id]
-        lemmas_nrc[review_id] = [(lemma, round(val_nrc.loc[lemma][0], 5)) for lemma in lemmas if lemma in val_nrc.index]
-    with open(f'data/yelp_reviews_lemmas_val_nrc_{r1}_{r2}.pkl', 'wb') as doc_w:
-        pickle.dump(lemmas_nrc, doc_w)
     val_y = pd.read_csv(f'data/vocabulary_{str(r1)}_{str(r2)}_val_yelp.csv', index_col=[0])
+    lemmas_nrc = dict()
+    values_nrc = dict()
     lemmas_yelp = dict()
+    values_yelp = dict()
     for _, review_id in zip(tqdm(list(range(len(list(data.keys()))))), list(data.keys())):
-        lemmas = data[review_id]
-        lemmas_yelp[review_id] = [(lemma, round(val_y.loc[lemma][0], 5)) for lemma in lemmas if lemma in val_y.index]
-    with open(f'data/yelp_reviews_lemmas_val_yelp_{r1}_{r2}.pkl', 'wb') as doc_w:
-        pickle.dump(lemmas_yelp, doc_w)
+        lemmas = list(set(data[review_id]))
+        lemmas_list_nrc = sorted([(lemma, round(val_nrc.loc[lemma][0], 5)) for lemma in lemmas
+                                  if lemma in val_nrc.index], key=lambda x: x[1], reverse=True)
+        lemmas_nrc[review_id] = [x[0] for x in lemmas_list_nrc]
+        values_nrc[review_id] = [x[1] for x in lemmas_list_nrc]
+        lemmas_list_yelp = sorted([(lemma, round(val_y.loc[lemma][0], 5)) for lemma in lemmas
+                                   if lemma in val_y.index], key=lambda x: x[1], reverse=True)
+        lemmas_yelp[review_id] = [x[0] for x in lemmas_list_yelp]
+        values_yelp[review_id] = [x[1] for x in lemmas_list_yelp]
+    pd.DataFrame().from_dict(lemmas_nrc, orient='index').to_csv(
+        f'data/yelp_reviews_lemmas_val_nrc_words_{r1}_{r2}.csv')
+    pd.DataFrame().from_dict(values_nrc, orient='index').to_csv(
+        f'data/yelp_reviews_lemmas_val_nrc_values_{r1}_{r2}.csv')
+    pd.DataFrame().from_dict(lemmas_yelp, orient='index').to_csv(
+        f'data/yelp_reviews_lemmas_val_yelp_words_{r1}_{r2}.csv')
+    pd.DataFrame().from_dict(values_yelp, orient='index').to_csv(
+        f'data/yelp_reviews_lemmas_val_yelp_values_{r1}_{r2}.csv')
 
 
 def create_user_review_frequencies(file_name):
