@@ -62,8 +62,9 @@ def relation_with_connector(word, relations):
     return False
 
 
-def shift_valence(sentence, lemmas, values):
-    relations = dependency_parse(sentence)
+def shift_valence(sentence, lemmas, values, relations=None):
+    if relations is None:
+        relations = dependency_parse(sentence)
     for i in range(len(lemmas)):
         if relation_with_positive_intensifier(lemmas[i], relations):
             values[i] *= 1.5
@@ -73,7 +74,7 @@ def shift_valence(sentence, lemmas, values):
             values[i] *= -1
         if relation_with_connector(lemmas[i], relations):
             values[i] *= 0
-    return values
+    return values, relations
 
 
 if __name__ == '__main__':
