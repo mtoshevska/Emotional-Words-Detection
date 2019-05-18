@@ -1,6 +1,8 @@
 import json
 import os
+import random
 from nltk.tokenize import word_tokenize
+from keras.preprocessing.sequence import pad_sequences
 from collections import Counter
 import pandas as pd
 import _pickle as pickle
@@ -12,6 +14,116 @@ from tqdm import tqdm
 from valence import assign_valence
 from dependency_parsing import shift_valence, dependency_parse
 
+
+def load_embeddings(file_name, vocabulary):
+    """
+    Loads word embeddings from the file with the given name.
+    :param file_name: name of the file containing word embeddings
+    :type file_name: str
+    :param vocabulary: captions vocabulary
+    :type vocabulary: numpy.array
+    :return: word embeddings
+    :rtype: dict
+    """
+    embeddings = dict()
+    with open(file_name, 'r', encoding='utf-8') as doc:
+        line = doc.readline()
+        while line != '':
+            line = line.rstrip('\n').lower()
+            parts = line.split(' ')
+            vals = np.array(parts[1:], dtype=np.float)
+            if parts[0] in vocabulary:
+                embeddings[parts[0]] = vals
+            line = doc.readline()
+    return embeddings
+
+
+def load_embedding_weights(vocabulary, embedding_size, r1, r2):
+    """
+    Creates and loads embedding weights.
+    :param vocabulary: captions vocabulary
+    :type vocabulary: numpy.array
+    :param embedding_size: embedding size
+    :type embedding_size: int
+    :return: embedding weights
+    :rtype: numpy.array
+    """
+    if os.path.exists(f'data/embedding_matrix_{r1}_{r2}.pkl'):
+        with open(f'data/embedding_matrix_{r1}_{r2}.pkl', 'rb') as f:
+            embedding_matrix = pickle.load(f)
+    else:
+        print('Creating embedding weights...')
+        embeddings = load_embeddings(f'data/glove.6B.{embedding_size}d.txt', vocabulary)
+        embedding_matrix = np.zeros((len(vocabulary), embedding_size))
+        for i in range(len(vocabulary)):
+            if vocabulary[i] in embeddings.keys():
+                embedding_matrix[i] = embeddings[vocabulary[i]]
+            else:
+                embedding_matrix[i] = np.random.standard_normal(embedding_size)
+        with open(f'data/embedding_matrix_{r1}_{r2}.pkl', 'wb') as f:
+            pickle.dump(embedding_matrix, f)
+    return embedding_matrix
+
+
+def load_word_mappings(vocabulary):
+    """
+    Loads word_to_id and id_to_word according to the given vocabulary. They are created if they do not exist.
+    :param vocabulary: reviews vocabulary
+    :type vocabulary: numpy.array
+    :return: word mappings
+    :rtype: dict, dict
+    """
+    if os.path.exists('data/word_to_id.pkl') and os.path.exists('data/id_to_word.pkl'):
+        with open('data/id_to_word.pkl', 'rb') as f:
+            id_to_word = pickle.load(f)
+        with open('data/word_to_id.pkl', 'rb') as f:
+            word_to_id = pickle.load(f)
+    else:
+        id_to_word = dict()
+        word_to_id = dict()
+        for i, word in zip(range(len(vocabulary)), vocabulary):
+            id_to_word[i] = word
+            word_to_id[word] = i
+        with open('data/id_to_word.pkl', 'wb') as f:
+            pickle.dump(id_to_word, f)
+        with open('data/word_to_id.pkl', 'wb') as f:
+            pickle.dump(word_to_id, f)
+    return word_to_id, id_to_word
+
+
+def load_train_val_test_subsets(r1, r2):
+    if not os.path.exists(f'data/yelp_reviews_train_ids_{r1}_{r2}.csv'):
+        review_ids = list()
+        with open(f'data/yelp_reviews_filtered_{r1}_{r2}.json', 'r', encoding='utf-8') as doc_r:
+            line = doc_r.readline()
+            while line != '':
+                review_id = json.loads(line)['review_id']
+                review_ids.append(review_id)
+                line = doc_r.readline()
+        random.shuffle(review_ids)
+        train_ids = review_ids[:int(0.7 * len(review_ids))]
+        val_ids = review_ids[int(0.7 * len(review_ids)):int(0.85 * len(review_ids))]
+        test_ids = review_ids[int(0.85 * len(review_ids)):]
+        pd.DataFrame(train_ids).to_csv(f'data/yelp_reviews_train_ids_{r1}_{r2}.csv', index=None, header=None)
+        pd.DataFrame(val_ids).to_csv(f'data/yelp_reviews_val_ids_{r1}_{r2}.csv', index=None, header=None)
+        pd.DataFrame(test_ids).to_csv(f'data/yelp_reviews_test_ids_{r1}_{r2}.csv', index=None, header=None)
+    else:
+        train_ids = pd.read_csv(f'data/yelp_reviews_train_ids_{r1}_{r2}.csv').get_values().flatten()
+        val_ids = pd.read_csv(f'data/yelp_reviews_val_ids_{r1}_{r2}.csv').get_values().flatten()
+        test_ids = pd.read_csv(f'data/yelp_reviews_test_ids_{r1}_{r2}.csv').get_values().flatten()
+    return train_ids, val_ids, test_ids
+
+
+def load_sequences(r1, r2, review_ids, word_to_id, pad_size):
+    with open(f'data/yelp_reviews_lemmas_{r1}_{r2}.pkl', 'rb') as doc_r:
+        data = pickle.load(doc_r)
+    stars = pd.read_csv(f'data/yelp_reviews_stars_{r1}_{r2}.csv', index_col=[0]).to_dict(orient='index')
+    sequences = list()
+    classes = list()
+    for review_id in review_ids:
+        sequences.append(np.array([word_to_id[d] if d in word_to_id.keys() else 0 for d in data[review_id]]))
+        classes.append(stars[review_id]['0'])
+    return pad_sequences(sequences, pad_size), classes
 
 def tokenize_review(review):
     tokens = word_tokenize(review.lower())
@@ -105,6 +217,10 @@ def create_reviews_subset(file_name):
             line = doc.readline()
     with open('data/yelp_reviews_subset.json', 'w+', encoding='utf-8') as doc:
         json.dump(reviews, doc)
+
+
+def load_vocabulary(r1, r2):
+    return pd.read_csv(f'data/vocabulary_{r1}_{r2}.csv', index_col=[0]).get_values().flatten()
 
 
 def filter_vocabulary(vocab, frequencies):
@@ -310,11 +426,26 @@ def calculate_reviews_length(file_name):
     pd.DataFrame().from_dict(lengths, orient='index').to_csv('data/reviews_length.csv')
 
 
+def create_label_data(r1, r2):
+    stars = dict()
+    with open(f'data/yelp_reviews_filtered_{r1}_{r2}.json', 'r', encoding='utf-8') as doc_r:
+        line = doc_r.readline()
+        while line != '':
+            review = json.loads(line)
+            review_id = review['review_id']
+            review_stars = review['stars']
+            stars[review_id] = review_stars
+            line = doc_r.readline()
+    pd.DataFrame().from_dict(stars, orient='index').to_csv(f'data/yelp_reviews_stars_{r1}_{r2}.csv')
+
+
 if __name__ == '__main__':
     # create_reviews_subset('data/yelp_reviews.json')
     # create_user_review_frequencies('data/yelp_reviews.json')
     # calculate_reviews_length('data/yelp_reviews.json')
     # filter_reviews('data/yelp_reviews.json')
+    # create_label_data(50, 500)
+    # create_label_data(10, 500)
     # tokenize_reviews(50, 500)
     # tokenize_reviews(10, 500)
     # lemmatize_reviews(50, 500)
