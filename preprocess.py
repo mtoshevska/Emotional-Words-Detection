@@ -38,7 +38,7 @@ def load_embeddings(file_name, vocabulary):
     return embeddings
 
 
-def load_embedding_weights(vocabulary, embedding_size, r1, r2):
+def load_embedding_weights(vocabulary, embedding_size, embedding_source, r1, r2):
     """
     Creates and loads embedding weights.
     :param vocabulary: captions vocabulary
@@ -48,24 +48,28 @@ def load_embedding_weights(vocabulary, embedding_size, r1, r2):
     :return: embedding weights
     :rtype: numpy.array
     """
-    if os.path.exists(f'data/embedding_matrix_{r1}_{r2}.pkl'):
-        with open(f'data/embedding_matrix_{r1}_{r2}.pkl', 'rb') as f:
+    assert embedding_source in ['wikipedia', 'twitter']
+    if os.path.exists(f'data/embedding_matrix_{embedding_source}_{embedding_size}_{r1}_{r2}.pkl'):
+        with open(f'data/embedding_matrix_{embedding_source}_{embedding_size}_{r1}_{r2}.pkl', 'rb') as f:
             embedding_matrix = pickle.load(f)
     else:
         print('Creating embedding weights...')
-        embeddings = load_embeddings(f'data/glove.6B.{embedding_size}d.txt', vocabulary)
+        if embedding_source == 'wikipedia':
+            embeddings = load_embeddings(f'data/glove.6B.{embedding_size}d.txt', vocabulary)
+        else:
+            embeddings = load_embeddings(f'data/glove.twitter.27B.{embedding_size}d.txt', vocabulary)
         embedding_matrix = np.zeros((len(vocabulary), embedding_size))
         for i in range(len(vocabulary)):
             if vocabulary[i] in embeddings.keys():
                 embedding_matrix[i] = embeddings[vocabulary[i]]
             else:
                 embedding_matrix[i] = np.random.standard_normal(embedding_size)
-        with open(f'data/embedding_matrix_{r1}_{r2}.pkl', 'wb') as f:
+        with open(f'data/embedding_matrix_{embedding_source}_{embedding_size}_{r1}_{r2}.pkl', 'wb') as f:
             pickle.dump(embedding_matrix, f)
     return embedding_matrix
 
 
-def load_word_mappings(vocabulary):
+def load_word_mappings(vocabulary, r1, r2):
     """
     Loads word_to_id and id_to_word according to the given vocabulary. They are created if they do not exist.
     :param vocabulary: reviews vocabulary
@@ -73,10 +77,10 @@ def load_word_mappings(vocabulary):
     :return: word mappings
     :rtype: dict, dict
     """
-    if os.path.exists('data/word_to_id.pkl') and os.path.exists('data/id_to_word.pkl'):
-        with open('data/id_to_word.pkl', 'rb') as f:
+    if os.path.exists(f'data/word_to_id_{r1}_{r2}.pkl') and os.path.exists(f'data/id_to_word_{r1}_{r2}.pkl'):
+        with open(f'data/id_to_word_{r1}_{r2}.pkl', 'rb') as f:
             id_to_word = pickle.load(f)
-        with open('data/word_to_id.pkl', 'rb') as f:
+        with open(f'data/word_to_id_{r1}_{r2}.pkl', 'rb') as f:
             word_to_id = pickle.load(f)
     else:
         id_to_word = dict()
@@ -84,9 +88,9 @@ def load_word_mappings(vocabulary):
         for i, word in zip(range(len(vocabulary)), vocabulary):
             id_to_word[i] = word
             word_to_id[word] = i
-        with open('data/id_to_word.pkl', 'wb') as f:
+        with open(f'data/id_to_word_{r1}_{r2}.pkl', 'wb') as f:
             pickle.dump(id_to_word, f)
-        with open('data/word_to_id.pkl', 'wb') as f:
+        with open(f'data/word_to_id_{r1}_{r2}.pkl', 'wb') as f:
             pickle.dump(word_to_id, f)
     return word_to_id, id_to_word
 
@@ -426,6 +430,19 @@ def calculate_reviews_length(file_name):
     pd.DataFrame().from_dict(lengths, orient='index').to_csv('data/reviews_length.csv')
 
 
+def calculate_review_length_distribution(r1, r2):
+    with open(f'data/yelp_reviews_lemmas_{r1}_{r2}.pkl', 'rb') as doc_r:
+        data = pickle.load(doc_r)
+    vocab = load_vocabulary(r1, r2)
+    lengths = dict()
+    lengths_filtered = dict()
+    for _, k in zip(tqdm(list(range(len(list(data.keys()))))), list(data.keys())):
+        lengths[k] = len(data[k])
+        lengths_filtered[k] = len([d for d in data[k] if d in vocab])
+    pd.DataFrame().from_dict(lengths, orient='index').to_csv(f'data/reviews_length_{r1}_{r2}.csv')
+    pd.DataFrame().from_dict(lengths_filtered, orient='index').to_csv(f'data/reviews_length_filtered_{r1}_{r2}.csv')
+
+
 def create_label_data(r1, r2):
     stars = dict()
     with open(f'data/yelp_reviews_filtered_{r1}_{r2}.json', 'r', encoding='utf-8') as doc_r:
@@ -450,6 +467,8 @@ if __name__ == '__main__':
     # tokenize_reviews(10, 500)
     # lemmatize_reviews(50, 500)
     # lemmatize_reviews(10, 500)
+    calculate_review_length_distribution(50, 500)
+    calculate_review_length_distribution(10, 500)
     # create_vocabulary(50, 500)
     # create_vocabulary(10, 500)
     # assign_valence_vocabulary(50, 500)
@@ -457,5 +476,5 @@ if __name__ == '__main__':
     # assign_valence_reviews(50, 500)
     # assign_valence_reviews(10, 500)
     # parse_dependencies()
-    context_shift(50, 500)
-    context_shift(10, 500)
+    # context_shift(50, 500)
+    # context_shift(10, 500)

@@ -4,6 +4,7 @@ import json
 import _pickle as pickle
 import pandas as pd
 import numpy as np
+from scipy import stats
 
 
 def plot_distribution(data, title, x_axis_name, x_axis_data, y_axis_name, y_axis_data):
@@ -29,8 +30,8 @@ def plot_distribution(data, title, x_axis_name, x_axis_data, y_axis_name, y_axis
     plt.ylim(1e-1, 1e5)
     ax.grid(False)
     sns.regplot(x_axis_data, y_axis_data, data, ax=ax, scatter_kws={'s': 250}, fit_reg=False, color='xkcd:turquoise')
-    ax.set_ylabel(y_axis_name)
-    ax.set_xlabel(x_axis_name)
+    #ax.set_ylabel(y_axis_name)
+    #ax.set_xlabel(x_axis_name)
     ax.grid(False)
     plt.title(title)
     plt.show()
@@ -75,6 +76,32 @@ def print_review_statistic(file_name):
     print('3, 4 and 5 stars: ' + str(s[2] + s[3] + s[4]))
 
 
+def print_review_length_statistic(lengths_file, lengths_filtered_file):
+    """
+    Prints caption statistics (minimum, maximum, average, median, mode).
+    :param lengths_file: name of the file containing review length information
+    :type lengths_file: str
+    :param lengths_filtered_file: name of the file containing review length information
+    :type lengths_filtered_file: str
+    """
+    lengths = pd.read_csv(lengths_file, sep=',', index_col=0).get_values().flatten()
+    lengths_filtered = pd.read_csv(lengths_filtered_file, sep=',', index_col=0).get_values().flatten()
+    print('===== Review length =====')
+    print(f'Min: {round(np.min(lengths), 2)}')
+    print(f'Max: {round(np.max(lengths), 2)}')
+    print(f'Avg: {round(np.average(lengths), 2)}')
+    print(f'Median: {round(np.median(lengths), 2)}')
+    print(f'Mode: {round(stats.mode(lengths)[0][0], 2)}')
+    print()
+    print('===== Review length filtered =====')
+    print(f'Min: {round(np.min(lengths_filtered), 2)}')
+    print(f'Max: {round(np.max(lengths_filtered), 2)}')
+    print(f'Avg: {round(np.average(lengths_filtered), 2)}')
+    print(f'Median: {round(np.median(lengths_filtered), 2)}')
+    print(f'Mode: {round(stats.mode(lengths)[0][0], 2)}')
+    print()
+
+
 def plot_user_review_frequencies():
     frequencies = pd.read_csv('data/user_review_frequencies.csv', sep=',', index_col=0)['0'].get_values()
     distribution_array = frequencies
@@ -111,26 +138,32 @@ def plot_word_frequencies_distribution(frequencies_file):
 
 def plot_review_length_distribution(lengths_file):
     """
-    Plots the distribution of captions length.
+    Plots the distribution of reviews length.
     :param lengths_file: name of the file containing image captions
     :type lengths_file: str
     """
-    lengths = pd.read_csv(lengths_file, sep=',', index_col=0).get_values()
+    lengths = pd.read_csv(lengths_file, sep=',', index_col=0).get_values().flatten()
     distribution_array = lengths
     distribution = np.zeros(np.max(distribution_array) + 1, dtype=np.float32)
     distribution_index = np.array(range(np.max(distribution_array) + 1), dtype=np.float32)
     for d in distribution_array:
         distribution[d] += 1
     data = pd.DataFrame()
-    data['Number of reviews'] = distribution_index
-    data['Review length'] = distribution
-    plot_distribution(data, 'Review length distribution', 'Number of reviews', 'Number of reviews',
-                      'Review length', 'Review length')
+    data['Review length'] = distribution_index
+    data['Number of reviews'] = distribution
+    plot_distribution(data, 'Review length distribution', 'Review length', 'Review length',
+                      'Number of reviews', 'Number of reviews')
 
 
 if __name__ == '__main__':
     # print_review_statistic('data/yelp_reviews_filtered.json')
     # plot_user_review_frequencies()
     # plot_review_length_distribution('data/reviews_length.csv')
-    plot_word_frequencies_distribution('data/vocabulary_full_frequencies_50_500.pkl')
-    plot_word_frequencies_distribution('data/vocabulary_full_frequencies_10_500.pkl')
+    plot_review_length_distribution('data/reviews_length_50_500.csv')
+    plot_review_length_distribution('data/reviews_length_filtered_50_500.csv')
+    print_review_length_statistic('data/reviews_length_50_500.csv', 'data/reviews_length_filtered_50_500.csv')
+    #plot_review_length_distribution('data/reviews_length_10_500.csv')
+    #plot_review_length_distribution('data/reviews_length_filtered_10_500.csv')
+    #print_review_length_statistic('data/reviews_length_10_500.csv', 'data/reviews_length_filtered_10_500.csv')
+    # plot_word_frequencies_distribution('data/vocabulary_full_frequencies_50_500.pkl')
+    # plot_word_frequencies_distribution('data/vocabulary_full_frequencies_10_500.pkl')
