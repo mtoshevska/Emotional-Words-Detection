@@ -7,14 +7,14 @@ import numpy as np
 
 
 class SentDetect:
-    def __init__(self):
+    def __init__(self, r1, r2, embedding_source):
         """
         Initializes class for SentDetect model.
         """
-        self.name = 'SentDetect'
+        self.name = f'SentDetect_{r1}_{r2}_{embedding_source}'
         self.model = None
-        self.model_filepath = 'models/SentDetect-{epoch:02d}.h5'
-        self.logs_filepath = 'logs/SentDetect.log'
+        self.model_filepath = 'models/' + self.name + '-{epoch:02d}.h5'
+        self.logs_filepath = f'logs/SentDetect_{r1}_{r2}_{embedding_source}.log'
 
     def build(self, padding_size, vocabulary_size, embedding_size, weights):
         """
@@ -100,14 +100,14 @@ class SentDetect:
 
 
 class StarDetect:
-    def __init__(self):
+    def __init__(self, r1, r2, embedding_source):
         """
         Initializes class for StarDetect model.
         """
-        self.name = 'StarDetect'
+        self.name = f'StarDetect_{r1}_{r2}_{embedding_source}'
         self.model = None
-        self.model_filepath = 'models/StarDetect-{epoch:02d}.h5'
-        self.logs_filepath = 'logs/StarDetect.log'
+        self.model_filepath = 'models/' + self.name + '-{epoch:02d}.h5'
+        self.logs_filepath = f'logs/StarDetect_{r1}_{r2}_{embedding_source}.log'
 
     def build(self, padding_size, vocabulary_size, embedding_size, weights):
         """
@@ -193,8 +193,8 @@ class StarDetect:
 
 
 if __name__ == '__main__':
-    model1 = SentDetect()
+    model1 = SentDetect(50, 500, 'w')
     model1.build(15, 5000, 300, None)
-    model2 = StarDetect()
+    model2 = StarDetect(50, 500, 't')
     model2.build(15, 5000, 300, None)
     print()
