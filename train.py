@@ -19,14 +19,14 @@ def balance_dataset(sequences, labels, model_type):
         num = np.min([star_1 + star_2 + star_3, star_4 + star_5])
         num_p = 0
         num_n = 0
-        for s, l in zip(sequences, labels):
-            if l > 3 and num_p < num:
-                new_sequences.append(s)
-                new_labels.append(l)
+        for sequence, label in zip(sequences, labels):
+            if label > 3 and num_p < num:
+                new_sequences.append(sequence)
+                new_labels.append(label)
                 num_p += 1
-            elif l < 4 and num_n < num:
-                new_sequences.append(s)
-                new_labels.append(l)
+            elif label < 4 and num_n < num:
+                new_sequences.append(sequence)
+                new_labels.append(label)
                 num_n += 1
     else:
         num = np.min([star_1, star_2, star_3, star_4, star_5])
@@ -35,28 +35,28 @@ def balance_dataset(sequences, labels, model_type):
         num_3 = 0
         num_4 = 0
         num_5 = 0
-        for s, l in zip(sequences, labels):
-            if l == 1 and num_1 < num:
-                new_sequences.append(s)
-                new_labels.append(l)
+        for sequence, label in zip(sequences, labels):
+            if label == 1 and num_1 < num:
+                new_sequences.append(sequence)
+                new_labels.append(label)
                 num_1 += 1
-            elif l == 2 and num_2 < num:
-                new_sequences.append(s)
-                new_labels.append(l)
+            elif label == 2 and num_2 < num:
+                new_sequences.append(sequence)
+                new_labels.append(label)
                 num_2 += 1
-            elif l == 3 and num_3 < num:
-                new_sequences.append(s)
-                new_labels.append(l)
+            elif label == 3 and num_3 < num:
+                new_sequences.append(sequence)
+                new_labels.append(label)
                 num_3 += 1
-            elif l == 4 and num_4 < num:
-                new_sequences.append(s)
-                new_labels.append(l)
+            elif label == 4 and num_4 < num:
+                new_sequences.append(sequence)
+                new_labels.append(label)
                 num_4 += 1
-            elif l == 5 and num_5 < num:
-                new_sequences.append(s)
-                new_labels.append(l)
+            elif label == 5 and num_5 < num:
+                new_sequences.append(sequence)
+                new_labels.append(label)
                 num_5 += 1
-    return new_sequences, new_labels
+    return np.array(new_sequences), new_labels
 
 
 def train_sent_detect(r1, r2, padding_size, embedding_size, embedding_source, learning_rate, batch_size, num_epochs):
@@ -74,7 +74,7 @@ def train_sent_detect(r1, r2, padding_size, embedding_size, embedding_source, le
     val_sequences, val_labels = balance_dataset(val_sequences, val_labels, 'sentiment')
     train_data_generator = sent_detect_data_generator(train_sequences, train_labels, batch_size)
     val_data_generator = sent_detect_data_generator(val_sequences, val_labels, batch_size)
-    print(f'Training SentDetect model with reviews in range {r1}-{r2} ...')
+    print(f'Training SentDetect model with reviews in range {r1}-{r2} with {embedding_source} embedding vectors ...')
     start_time = time.time()
     steps_per_epoch = len(train_sequences) // batch_size
     model.train(num_epochs, steps_per_epoch, train_data_generator, val_data_generator)
@@ -97,7 +97,7 @@ def train_star_detect(r1, r2, padding_size, embedding_size, embedding_source, le
     val_sequences, val_labels = balance_dataset(val_sequences, val_labels, 'star')
     train_data_generator = star_detect_data_generator(train_sequences, train_labels, batch_size)
     val_data_generator = star_detect_data_generator(val_sequences, val_labels, batch_size)
-    print(f'Training StarDetect model with reviews in range {r1}-{r2} ...')
+    print(f'Training StarDetect model with reviews in range {r1}-{r2} with {embedding_source} embedding vectors ...')
     start_time = time.time()
     steps_per_epoch = len(train_sequences) // batch_size
     model.train(num_epochs, steps_per_epoch, train_data_generator, val_data_generator)
@@ -107,10 +107,18 @@ def train_star_detect(r1, r2, padding_size, embedding_size, embedding_source, le
 
 if __name__ == '__main__':
     train_sent_detect(r1=50, r2=500, padding_size=45, embedding_size=300, embedding_source='wikipedia',
-                       learning_rate=0.0001, batch_size=256, num_epochs=10)
+                      learning_rate=0.0001, batch_size=256, num_epochs=50)
     train_star_detect(r1=50, r2=500, padding_size=45, embedding_size=300, embedding_source='wikipedia',
-                       learning_rate=0.0001, batch_size=256, num_epochs=10)
-    # train_sent_detect(r1=10, r2=500, padding_size=15, embedding_size=300, embedding_source='wikipedia',
-    #                   learning_rate=0.0001, batch_size=256, num_epochs=10)
-    # train_star_detect(r1=10, r2=500, padding_size=15, embedding_size=300, embedding_source='wikipedia',
-    #                   learning_rate=0.0001, batch_size=256, num_epochs=10)
+                      learning_rate=0.0001, batch_size=256, num_epochs=100)
+    train_sent_detect(r1=50, r2=500, padding_size=45, embedding_size=200, embedding_source='twitter',
+                      learning_rate=0.0001, batch_size=256, num_epochs=50)
+    train_star_detect(r1=50, r2=500, padding_size=45, embedding_size=200, embedding_source='twitter',
+                      learning_rate=0.0001, batch_size=256, num_epochs=100)
+    train_sent_detect(r1=10, r2=500, padding_size=42, embedding_size=300, embedding_source='wikipedia',
+                      learning_rate=0.0001, batch_size=256, num_epochs=25)
+    train_star_detect(r1=10, r2=500, padding_size=42, embedding_size=300, embedding_source='wikipedia',
+                      learning_rate=0.0001, batch_size=256, num_epochs=100)
+    train_sent_detect(r1=10, r2=500, padding_size=42, embedding_size=200, embedding_source='twitter',
+                      learning_rate=0.0001, batch_size=256, num_epochs=25)
+    train_star_detect(r1=10, r2=500, padding_size=42, embedding_size=200, embedding_source='twitter',
+                      learning_rate=0.0001, batch_size=256, num_epochs=100)

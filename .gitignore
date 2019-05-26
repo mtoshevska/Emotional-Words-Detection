@@ -154,3 +154,5 @@ fabric.properties
 # Large files
 .idea/*
 data/
+models/
+logs/

@@ -13,10 +13,11 @@ class SentDetect:
         """
         self.name = f'SentDetect_{r1}_{r2}_{embedding_source}'
         self.model = None
+        self.attention_weights_only = False
         self.model_filepath = 'models/' + self.name + '-{epoch:02d}.h5'
         self.logs_filepath = f'logs/SentDetect_{r1}_{r2}_{embedding_source}.log'
 
-    def build(self, padding_size, vocabulary_size, embedding_size, weights):
+    def build(self, padding_size, vocabulary_size, embedding_size, weights, attention_weights_only=False):
         """
         Builds SentDetect model.
         :param padding_size: padding size
@@ -27,7 +28,10 @@ class SentDetect:
         :type embedding_size: int
         :param weights: embedding weights
         :type weights: numpy.array
+        :param attention_weights_only: attention layer is the output layer if true
+        :type attention_weights_only: bool
         """
+        self.attention_weights_only = attention_weights_only
         input_layer = Input(shape=(padding_size,), name='SentDetect_input')
         word_embedding = Embedding(input_dim=vocabulary_size, output_dim=embedding_size,
                                    weights=[weights], name='SentDetect_embedding')(input_layer)
@@ -47,7 +51,10 @@ class SentDetect:
         intermediate_layer = Dense(256, activation='tanh', name='SentDetect_dense4')(intermediate_layer)
         intermediate_layer = Dropout(0.5, name='SentDetect_dropout4')(intermediate_layer)
         output_layer = Dense(2, activation='softmax', name='SentDetect_dense5')(intermediate_layer)
-        self.model = Model(input_layer, output_layer)
+        if attention_weights_only:
+            self.model = Model(input_layer, attention_weighted_sum)
+        else:
+            self.model = Model(input_layer, output_layer)
 
     def compile(self, learning_rate):
         """
@@ -91,12 +98,15 @@ class SentDetect:
 
     def predict(self, features):
         """
-        Generates prediction with the given image features.
-        :return: predicted caption length
+        Generates prediction with the given review features.
+        :return: predicted sentiment class (0 - positive, 1 - negative) or attention weights
         :rtype: int
         """
-        result = self.model.predict(np.array([features]))
-        return np.argmax(result[0])
+        result = self.model.predict(np.array([features]))[0]
+        if self.attention_weights_only:
+            return np.sum(result, axis=1)
+        else:
+            return np.argmax(result)
 
 
 class StarDetect:
@@ -106,10 +116,11 @@ class StarDetect:
         """
         self.name = f'StarDetect_{r1}_{r2}_{embedding_source}'
         self.model = None
+        self.attention_weights_only = False
         self.model_filepath = 'models/' + self.name + '-{epoch:02d}.h5'
         self.logs_filepath = f'logs/StarDetect_{r1}_{r2}_{embedding_source}.log'
 
-    def build(self, padding_size, vocabulary_size, embedding_size, weights):
+    def build(self, padding_size, vocabulary_size, embedding_size, weights, attention_weights_only=False):
         """
         Builds StarDetect model.
         :param padding_size: padding size
@@ -120,7 +131,10 @@ class StarDetect:
         :type embedding_size: int
         :param weights: embedding weights
         :type weights: numpy.array
+        :param attention_weights_only: attention layer is the output layer if true
+        :type attention_weights_only: bool
         """
+        self.attention_weights_only = attention_weights_only
         input_layer = Input(shape=(padding_size,), name='StarDetect_input')
         word_embedding = Embedding(input_dim=vocabulary_size, output_dim=embedding_size,
                                    weights=[weights], name='StarDetect_embedding')(input_layer)
@@ -140,7 +154,10 @@ class StarDetect:
         intermediate_layer = Dense(256, activation='tanh', name='StarDetect_dense4')(intermediate_layer)
         intermediate_layer = Dropout(0.5, name='StarDetect_dropout4')(intermediate_layer)
         output_layer = Dense(5, activation='softmax', name='StarDetect_dense5')(intermediate_layer)
-        self.model = Model(input_layer, output_layer)
+        if attention_weights_only:
+            self.model = Model(input_layer, attention_weighted_sum)
+        else:
+            self.model = Model(input_layer, output_layer)
 
     def compile(self, learning_rate):
         """
@@ -184,12 +201,15 @@ class StarDetect:
 
     def predict(self, features):
         """
-        Generates prediction with the given image features.
-        :return: predicted caption length
+        Generates prediction with the given review features.
+        :return: predicted review star (0 - 1 star, 1 - 2 star, 2 - 3 star, 3 - 4 star, 4 - 5 star) or attention weights
         :rtype: int
         """
-        result = self.model.predict(np.array([features]))
-        return np.argmax(result[0])
+        result = self.model.predict(np.array([features]))[0]
+        if self.attention_weights_only:
+            return np.sum(result, axis=1)
+        else:
+            return np.argmax(result)
 
 
 if __name__ == '__main__':

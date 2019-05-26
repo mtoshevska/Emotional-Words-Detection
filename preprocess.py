@@ -45,6 +45,12 @@ def load_embedding_weights(vocabulary, embedding_size, embedding_source, r1, r2)
     :type vocabulary: numpy.array
     :param embedding_size: embedding size
     :type embedding_size: int
+    :param embedding_source: source of the pre-trained embeddings
+    :type embedding_source: string
+    :param r1: lower range boundary of reviews
+    :type r1: int
+    :param r2: upper range boundary of reviews
+    :type r2: int
     :return: embedding weights
     :rtype: numpy.array
     """
@@ -74,6 +80,10 @@ def load_word_mappings(vocabulary, r1, r2):
     Loads word_to_id and id_to_word according to the given vocabulary. They are created if they do not exist.
     :param vocabulary: reviews vocabulary
     :type vocabulary: numpy.array
+    :param r1: lower range boundary of reviews
+    :type r1: int
+    :param r2: upper range boundary of reviews
+    :type r2: int
     :return: word mappings
     :rtype: dict, dict
     """
@@ -86,8 +96,8 @@ def load_word_mappings(vocabulary, r1, r2):
         id_to_word = dict()
         word_to_id = dict()
         for i, word in zip(range(len(vocabulary)), vocabulary):
-            id_to_word[i] = word
-            word_to_id[word] = i
+            id_to_word[i + 1] = word
+            word_to_id[word] = i + 1
         with open(f'data/id_to_word_{r1}_{r2}.pkl', 'wb') as f:
             pickle.dump(id_to_word, f)
         with open(f'data/word_to_id_{r1}_{r2}.pkl', 'wb') as f:
@@ -118,16 +128,20 @@ def load_train_val_test_subsets(r1, r2):
     return train_ids, val_ids, test_ids
 
 
-def load_sequences(r1, r2, review_ids, word_to_id, pad_size):
+def load_sequences(r1, r2, review_ids, word_to_id, pad_size, pad=True):
     with open(f'data/yelp_reviews_lemmas_{r1}_{r2}.pkl', 'rb') as doc_r:
         data = pickle.load(doc_r)
     stars = pd.read_csv(f'data/yelp_reviews_stars_{r1}_{r2}.csv', index_col=[0]).to_dict(orient='index')
     sequences = list()
     classes = list()
     for review_id in review_ids:
-        sequences.append(np.array([word_to_id[d] if d in word_to_id.keys() else 0 for d in data[review_id]]))
+        sequences.append(np.array([word_to_id[d] for d in data[review_id] if d in word_to_id.keys()]))
         classes.append(stars[review_id]['0'])
-    return pad_sequences(sequences, pad_size), classes
+    if pad:
+        return pad_sequences(sequences, pad_size), classes
+    else:
+        return sequences, classes
+
 
 def tokenize_review(review):
     tokens = word_tokenize(review.lower())
@@ -217,7 +231,7 @@ def create_reviews_subset(file_name):
                 s[int(stars) - 1] += 1
                 review_id = review['review_id']
                 review_text = review['text']
-                reviews.append({'Review_ID': review_id , 'Text': review_text, 'Stars': stars})
+                reviews.append({'Review_ID': review_id, 'Text': review_text, 'Stars': stars})
             line = doc.readline()
     with open('data/yelp_reviews_subset.json', 'w+', encoding='utf-8') as doc:
         json.dump(reviews, doc)
@@ -350,11 +364,11 @@ def context_shift(r1, r2):
     for key, val in list(values_nrc.items()):
         values_nrc[key] = {k: v for k, v in val.items() if v is not ''}
     lemmas_yelp = pd.read_table(f'data/yelp_reviews_lemmas_val_yelp_words_{r1}_{r2}.csv', sep=',',
-                               index_col=[0], keep_default_na=False, na_values=['nan']).to_dict(orient='index')
+                                index_col=[0], keep_default_na=False, na_values=['nan']).to_dict(orient='index')
     for key, val in list(lemmas_yelp.items()):
         lemmas_yelp[key] = {k: v for k, v in val.items() if v is not ''}
     values_yelp = pd.read_table(f'data/yelp_reviews_lemmas_val_yelp_values_{r1}_{r2}.csv', sep=',',
-                               index_col=[0], keep_default_na=False, na_values=['nan']).to_dict(orient='index')
+                                index_col=[0], keep_default_na=False, na_values=['nan']).to_dict(orient='index')
     for key, val in list(values_yelp.items()):
         values_yelp[key] = {k: v for k, v in val.items() if v is not ''}
     with open('data/yelp_reviews_dependencies_6000.pkl', 'rb') as doc_r:
@@ -374,14 +388,16 @@ def context_shift(r1, r2):
                 values = [float(v) for v in list(values_nrc[review_id].values())]
                 rel = dependencies[review_id]
                 val_shift, rel = shift_valence(review_text.replace('/', ' '), lemmas, values, rel)
-                # lemmas_list_nrc = sorted([(l, v) for l, v in zip(lemmas, val_shift)], key=lambda x: x[1], reverse=True)
+                # lemmas_list_nrc = sorted([(l, v) for l, v in zip(lemmas, val_shift)], key=lambda x: x[1],
+                # reverse=True)
                 # lemmas_nrc[review_id] = [x[0] for x in lemmas_list_nrc]
                 # values_nrc[review_id] = [x[1] for x in lemmas_list_nrc]
                 values_nrc[review_id] = val_shift
                 lemmas = list(lemmas_yelp[review_id].values())
                 values = [float(v) for v in list(values_yelp[review_id].values())]
                 val_shift, rel = shift_valence(review_text.replace('/', ' '), lemmas, values, rel)
-                # lemmas_list_yelp = sorted([(l, v) for l, v in zip(lemmas, val_shift)], key=lambda x: x[1], reverse=True)
+                # lemmas_list_yelp = sorted([(l, v) for l, v in zip(lemmas, val_shift)], key=lambda x: x[1],
+                # reverse=True)
                 # lemmas_yelp[review_id] = [x[0] for x in lemmas_list_yelp]
                 # values_yelp[review_id] = [x[1] for x in lemmas_list_yelp]
                 values_yelp[review_id] = val_shift
@@ -467,14 +483,14 @@ if __name__ == '__main__':
     # tokenize_reviews(10, 500)
     # lemmatize_reviews(50, 500)
     # lemmatize_reviews(10, 500)
-    calculate_review_length_distribution(50, 500)
-    calculate_review_length_distribution(10, 500)
-    # create_vocabulary(50, 500)
-    # create_vocabulary(10, 500)
-    # assign_valence_vocabulary(50, 500)
-    # assign_valence_vocabulary(10, 500)
-    # assign_valence_reviews(50, 500)
-    # assign_valence_reviews(10, 500)
-    # parse_dependencies()
-    # context_shift(50, 500)
-    # context_shift(10, 500)
+    # calculate_review_length_distribution(50, 500)
+    # calculate_review_length_distribution(10, 500)
+    create_vocabulary(50, 500)
+    create_vocabulary(10, 500)
+    assign_valence_vocabulary(50, 500)
+    assign_valence_vocabulary(10, 500)
+    assign_valence_reviews(50, 500)
+    assign_valence_reviews(10, 500)
+    parse_dependencies()
+    context_shift(50, 500)
+    context_shift(10, 500)
