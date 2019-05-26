@@ -6,7 +6,7 @@ import time
 import numpy as np
 
 
-def balance_dataset(sequences, labels, model_type):
+def balance_dataset(sequences, labels, model_type, seq_ids):
     assert model_type in ['sentiment', 'star']
     star_1 = labels.count(1)
     star_2 = labels.count(2)
@@ -15,18 +15,21 @@ def balance_dataset(sequences, labels, model_type):
     star_5 = labels.count(5)
     new_sequences = list()
     new_labels = list()
+    new_seq_ids = list()
     if model_type == 'sentiment':
         num = np.min([star_1 + star_2 + star_3, star_4 + star_5])
         num_p = 0
         num_n = 0
-        for sequence, label in zip(sequences, labels):
+        for sequence, label, seq_id in zip(sequences, labels, seq_ids):
             if label > 3 and num_p < num:
                 new_sequences.append(sequence)
                 new_labels.append(label)
+                new_seq_ids.append(seq_id)
                 num_p += 1
             elif label < 4 and num_n < num:
                 new_sequences.append(sequence)
                 new_labels.append(label)
+                new_seq_ids.append(seq_id)
                 num_n += 1
     else:
         num = np.min([star_1, star_2, star_3, star_4, star_5])
@@ -35,28 +38,33 @@ def balance_dataset(sequences, labels, model_type):
         num_3 = 0
         num_4 = 0
         num_5 = 0
-        for sequence, label in zip(sequences, labels):
+        for sequence, label, seq_id in zip(sequences, labels, seq_ids):
             if label == 1 and num_1 < num:
                 new_sequences.append(sequence)
                 new_labels.append(label)
+                new_seq_ids.append(seq_id)
                 num_1 += 1
             elif label == 2 and num_2 < num:
                 new_sequences.append(sequence)
                 new_labels.append(label)
+                new_seq_ids.append(seq_id)
                 num_2 += 1
             elif label == 3 and num_3 < num:
                 new_sequences.append(sequence)
                 new_labels.append(label)
+                new_seq_ids.append(seq_id)
                 num_3 += 1
             elif label == 4 and num_4 < num:
                 new_sequences.append(sequence)
                 new_labels.append(label)
+                new_seq_ids.append(seq_id)
                 num_4 += 1
             elif label == 5 and num_5 < num:
                 new_sequences.append(sequence)
                 new_labels.append(label)
+                new_seq_ids.append(seq_id)
                 num_5 += 1
-    return np.array(new_sequences), new_labels
+    return np.array(new_sequences), new_labels, new_seq_ids
 
 
 def train_sent_detect(r1, r2, padding_size, embedding_size, embedding_source, learning_rate, batch_size, num_epochs):
@@ -69,9 +77,9 @@ def train_sent_detect(r1, r2, padding_size, embedding_size, embedding_source, le
     model.summary()
     w_to_i, _ = load_word_mappings(vocab, r1, r2)
     train_sequences, train_labels = load_sequences(r1, r2, train_ids, w_to_i, padding_size)
-    train_sequences, train_labels = balance_dataset(train_sequences, train_labels, 'sentiment')
+    train_sequences, train_labels, train_ids = balance_dataset(train_sequences, train_labels, 'sentiment', train_ids)
     val_sequences, val_labels = load_sequences(r1, r2, val_ids, w_to_i, padding_size)
-    val_sequences, val_labels = balance_dataset(val_sequences, val_labels, 'sentiment')
+    val_sequences, val_labels, val_ids = balance_dataset(val_sequences, val_labels, 'sentiment', val_ids)
     train_data_generator = sent_detect_data_generator(train_sequences, train_labels, batch_size)
     val_data_generator = sent_detect_data_generator(val_sequences, val_labels, batch_size)
     print(f'Training SentDetect model with reviews in range {r1}-{r2} with {embedding_source} embedding vectors ...')
@@ -92,9 +100,9 @@ def train_star_detect(r1, r2, padding_size, embedding_size, embedding_source, le
     model.summary()
     w_to_i, _ = load_word_mappings(vocab, r1, r2)
     train_sequences, train_labels = load_sequences(r1, r2, train_ids, w_to_i, padding_size)
-    train_sequences, train_labels = balance_dataset(train_sequences, train_labels, 'star')
+    train_sequences, train_labels, train_ids = balance_dataset(train_sequences, train_labels, 'star', train_ids)
     val_sequences, val_labels = load_sequences(r1, r2, val_ids, w_to_i, padding_size)
-    val_sequences, val_labels = balance_dataset(val_sequences, val_labels, 'star')
+    val_sequences, val_labels, val_ids = balance_dataset(val_sequences, val_labels, 'star', val_ids)
     train_data_generator = star_detect_data_generator(train_sequences, train_labels, batch_size)
     val_data_generator = star_detect_data_generator(val_sequences, val_labels, batch_size)
     print(f'Training StarDetect model with reviews in range {r1}-{r2} with {embedding_source} embedding vectors ...')
