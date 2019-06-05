@@ -276,22 +276,30 @@ def assign_valence_reviews(r1, r2):
     val_y = pd.read_csv(f'data/vocabulary_{str(r1)}_{str(r2)}_val_yelp.csv', index_col=[0])
     lemmas_nrc = dict()
     values_nrc = dict()
+    valence_nrc = dict()
     lemmas_yelp = dict()
     values_yelp = dict()
+    valence_yelp = dict()
     for _, review_id in zip(tqdm(list(range(len(list(data.keys()))))), list(data.keys())):
         lemmas = list(set(data[review_id]))
         lemmas_list_nrc = sorted([(lemma, round(val_nrc.loc[lemma][0], 5)) for lemma in lemmas
                                   if lemma in val_nrc.index], key=lambda x: x[1], reverse=True)
+        valence_nrc[review_id] = lemmas_list_nrc
         lemmas_nrc[review_id] = [x[0] for x in lemmas_list_nrc]
         values_nrc[review_id] = [x[1] for x in lemmas_list_nrc]
         lemmas_list_yelp = sorted([(lemma, round(val_y.loc[lemma][0], 5)) for lemma in lemmas
                                    if lemma in val_y.index], key=lambda x: x[1], reverse=True)
+        valence_yelp[review_id] = lemmas_list_yelp
         lemmas_yelp[review_id] = [x[0] for x in lemmas_list_yelp]
         values_yelp[review_id] = [x[1] for x in lemmas_list_yelp]
+    with open(f'data/yelp_reviews_lemmas_valence_nrc_{r1}_{r2}.pkl', 'wb') as doc_w:
+        pickle.dump(valence_nrc, doc_w)
     pd.DataFrame().from_dict(lemmas_nrc, orient='index').to_csv(
         f'data/yelp_reviews_lemmas_val_nrc_words_{r1}_{r2}.csv')
     pd.DataFrame().from_dict(values_nrc, orient='index').to_csv(
         f'data/yelp_reviews_lemmas_val_nrc_values_{r1}_{r2}.csv')
+    with open(f'data/yelp_reviews_lemmas_valence_yelp_{r1}_{r2}.pkl', 'wb') as doc_w:
+        pickle.dump(valence_yelp, doc_w)
     pd.DataFrame().from_dict(lemmas_yelp, orient='index').to_csv(
         f'data/yelp_reviews_lemmas_val_yelp_words_{r1}_{r2}.csv')
     pd.DataFrame().from_dict(values_yelp, orient='index').to_csv(
@@ -355,24 +363,14 @@ def parse_dependencies():
 
 
 def context_shift(r1, r2):
-    lemmas_nrc = pd.read_table(f'data/yelp_reviews_lemmas_val_nrc_words_{r1}_{r2}.csv', sep=',',
-                               index_col=[0], keep_default_na=False, na_values=['nan']).to_dict(orient='index')
-    for key, val in list(lemmas_nrc.items()):
-        lemmas_nrc[key] = {k: v for k, v in val.items() if v is not ''}
-    values_nrc = pd.read_table(f'data/yelp_reviews_lemmas_val_nrc_values_{r1}_{r2}.csv', sep=',',
-                               index_col=[0], keep_default_na=False, na_values=['nan']).to_dict(orient='index')
-    for key, val in list(values_nrc.items()):
-        values_nrc[key] = {k: v for k, v in val.items() if v is not ''}
-    lemmas_yelp = pd.read_table(f'data/yelp_reviews_lemmas_val_yelp_words_{r1}_{r2}.csv', sep=',',
-                                index_col=[0], keep_default_na=False, na_values=['nan']).to_dict(orient='index')
-    for key, val in list(lemmas_yelp.items()):
-        lemmas_yelp[key] = {k: v for k, v in val.items() if v is not ''}
-    values_yelp = pd.read_table(f'data/yelp_reviews_lemmas_val_yelp_values_{r1}_{r2}.csv', sep=',',
-                                index_col=[0], keep_default_na=False, na_values=['nan']).to_dict(orient='index')
-    for key, val in list(values_yelp.items()):
-        values_yelp[key] = {k: v for k, v in val.items() if v is not ''}
-    with open('data/yelp_reviews_dependencies_6000.pkl', 'rb') as doc_r:
+    with open(f'data//yelp_reviews_lemmas_valence_nrc_{r1}_{r2}.pkl', 'rb') as doc_r:
+        valence_nrc = pickle.load(doc_r)
+    with open(f'data//yelp_reviews_lemmas_valence_yelp_{r1}_{r2}.pkl', 'rb') as doc_r:
+        valence_yelp = pickle.load(doc_r)
+    with open('data/yelp_reviews_dependencies_8000.pkl', 'rb') as doc_r:
         dependencies = pickle.load(doc_r)
+    valence_nrc_shifted = dict()
+    valence_yelp_shifted = dict()
     with open(f'data/yelp_reviews_filtered_{r1}_{r2}.json', 'r', encoding='utf-8') as doc_r:
         line = doc_r.readline()
         i = 0
@@ -382,34 +380,22 @@ def context_shift(r1, r2):
                 print(str(i))
             review = json.loads(line)
             review_id = review['review_id']
-            if review_id in lemmas_nrc.keys() and review_id in dependencies.keys() and len(dependencies[review_id]) > 0:
+            if review_id in valence_nrc.keys() and review_id in dependencies.keys() and len(dependencies[review_id]) > 0:
                 review_text = review['text']
-                lemmas = list(lemmas_nrc[review_id].values())
-                values = [float(v) for v in list(values_nrc[review_id].values())]
+                lemmas = [x[0] for x in valence_nrc[review_id]]
+                values = [float(x[1]) for x in valence_nrc[review_id]]
                 rel = dependencies[review_id]
                 val_shift, rel = shift_valence(review_text.replace('/', ' '), lemmas, values, rel)
-                # lemmas_list_nrc = sorted([(l, v) for l, v in zip(lemmas, val_shift)], key=lambda x: x[1],
-                # reverse=True)
-                # lemmas_nrc[review_id] = [x[0] for x in lemmas_list_nrc]
-                # values_nrc[review_id] = [x[1] for x in lemmas_list_nrc]
-                values_nrc[review_id] = val_shift
-                lemmas = list(lemmas_yelp[review_id].values())
-                values = [float(v) for v in list(values_yelp[review_id].values())]
+                valence_nrc_shifted[review_id] = [(l, v) for l, v in zip(lemmas, val_shift)]
+                lemmas = [x[0] for x in valence_yelp[review_id]]
+                values = [float(x[1]) for x in valence_yelp[review_id]]
                 val_shift, rel = shift_valence(review_text.replace('/', ' '), lemmas, values, rel)
-                # lemmas_list_yelp = sorted([(l, v) for l, v in zip(lemmas, val_shift)], key=lambda x: x[1],
-                # reverse=True)
-                # lemmas_yelp[review_id] = [x[0] for x in lemmas_list_yelp]
-                # values_yelp[review_id] = [x[1] for x in lemmas_list_yelp]
-                values_yelp[review_id] = val_shift
+                valence_yelp_shifted[review_id] = [(l, v) for l, v in zip(lemmas, val_shift)]
             line = doc_r.readline()
-    # pd.DataFrame().from_dict(lemmas_nrc, orient='index').to_csv(
-    #     f'data/yelp_reviews_lemmas_val_shifted_nrc_words_{r1}_{r2}.csv')
-    pd.DataFrame().from_dict(values_nrc, orient='index').to_csv(
-        f'data/yelp_reviews_lemmas_val_shifted_nrc_values_{r1}_{r2}.csv')
-    # pd.DataFrame().from_dict(lemmas_yelp, orient='index').to_csv(
-    #     f'data/yelp_reviews_lemmas_val_shifted_yelp_words_{r1}_{r2}.csv')
-    pd.DataFrame().from_dict(values_yelp, orient='index').to_csv(
-        f'data/yelp_reviews_lemmas_val_shifted_yelp_values_{r1}_{r2}.csv')
+    with open(f'data/yelp_reviews_lemmas_valence_shifted_nrc_{r1}_{r2}.pkl', 'wb') as doc_w:
+        pickle.dump(valence_nrc_shifted, doc_w)
+    with open(f'data/yelp_reviews_lemmas_valence_shifted_yelp_{r1}_{r2}.pkl', 'wb') as doc_w:
+        pickle.dump(valence_yelp_shifted, doc_w)
 
 
 def create_user_review_frequencies(file_name):
@@ -485,12 +471,12 @@ if __name__ == '__main__':
     # lemmatize_reviews(10, 500)
     # calculate_review_length_distribution(50, 500)
     # calculate_review_length_distribution(10, 500)
-    create_vocabulary(50, 500)
-    create_vocabulary(10, 500)
-    assign_valence_vocabulary(50, 500)
-    assign_valence_vocabulary(10, 500)
-    assign_valence_reviews(50, 500)
-    assign_valence_reviews(10, 500)
-    parse_dependencies()
+    # create_vocabulary(50, 500)
+    # create_vocabulary(10, 500)
+    # assign_valence_vocabulary(50, 500)
+    # assign_valence_vocabulary(10, 500)
+    # assign_valence_reviews(50, 500)
+    # assign_valence_reviews(10, 500)
+    # parse_dependencies()
     context_shift(50, 500)
     context_shift(10, 500)
