@@ -35,7 +35,7 @@ class SentDetect:
         input_layer = Input(shape=(padding_size,), name='SentDetect_input')
         word_embedding = Embedding(input_dim=vocabulary_size, output_dim=embedding_size,
                                    weights=[weights], name='SentDetect_embedding')(input_layer)
-        rnn = Bidirectional(LSTM(1024, return_sequences=True), name='SentDetect_BiLSTM')(word_embedding)
+        rnn = LSTM(1024, return_sequences=True, name='SentDetect_LSTM')(word_embedding)
         attention = Permute([2, 1], name='SentDetect_attention_permute1')(rnn)
         attention = Activation('tanh', name='SentDetect_attention_tanh')(attention)
         attention = Dense(padding_size, activation='softmax', name='SentDetect_attention_dense')(attention)
@@ -138,7 +138,7 @@ class StarDetect:
         input_layer = Input(shape=(padding_size,), name='StarDetect_input')
         word_embedding = Embedding(input_dim=vocabulary_size, output_dim=embedding_size,
                                    weights=[weights], name='StarDetect_embedding')(input_layer)
-        rnn = Bidirectional(LSTM(1024, return_sequences=True), name='StarDetect_BiLSTM')(word_embedding)
+        rnn = LSTM(1024, return_sequences=True, name='StarDetect_LSTM')(word_embedding)
         attention = Permute([2, 1], name='StarDetect_attention_permute1')(rnn)
         attention = Activation('tanh', name='StarDetect_attention_tanh')(attention)
         attention = Dense(padding_size, activation='softmax', name='StarDetect_attention_dense')(attention)

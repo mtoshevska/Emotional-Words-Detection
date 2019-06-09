@@ -117,16 +117,16 @@ if __name__ == '__main__':
     train_sent_detect(r1=50, r2=500, padding_size=45, embedding_size=300, embedding_source='wikipedia',
                       learning_rate=0.0001, batch_size=256, num_epochs=50)
     train_star_detect(r1=50, r2=500, padding_size=45, embedding_size=300, embedding_source='wikipedia',
-                      learning_rate=0.0001, batch_size=256, num_epochs=100)
+                      learning_rate=0.0001, batch_size=256, num_epochs=50)
     train_sent_detect(r1=50, r2=500, padding_size=45, embedding_size=200, embedding_source='twitter',
                       learning_rate=0.0001, batch_size=256, num_epochs=50)
     train_star_detect(r1=50, r2=500, padding_size=45, embedding_size=200, embedding_source='twitter',
-                      learning_rate=0.0001, batch_size=256, num_epochs=100)
+                      learning_rate=0.0001, batch_size=256, num_epochs=50)
     train_sent_detect(r1=10, r2=500, padding_size=42, embedding_size=300, embedding_source='wikipedia',
-                      learning_rate=0.0001, batch_size=256, num_epochs=25)
+                      learning_rate=0.0001, batch_size=256, num_epochs=50)
     train_star_detect(r1=10, r2=500, padding_size=42, embedding_size=300, embedding_source='wikipedia',
-                      learning_rate=0.0001, batch_size=256, num_epochs=100)
+                      learning_rate=0.0001, batch_size=256, num_epochs=50)
     train_sent_detect(r1=10, r2=500, padding_size=42, embedding_size=200, embedding_source='twitter',
-                      learning_rate=0.0001, batch_size=256, num_epochs=25)
+                      learning_rate=0.0001, batch_size=256, num_epochs=50)
     train_star_detect(r1=10, r2=500, padding_size=42, embedding_size=200, embedding_source='twitter',
-                      learning_rate=0.0001, batch_size=256, num_epochs=100)
+                      learning_rate=0.0001, batch_size=256, num_epochs=50)
