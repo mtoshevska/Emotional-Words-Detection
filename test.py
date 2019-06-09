@@ -125,35 +125,35 @@ def generate_star_detect_att_weights(r1, r2, padding_size, embedding_size, embed
 
 
 if __name__ == '__main__':
-    # evaluate_sent_detect(r1=50, r2=500, padding_size=45, embedding_size=300, embedding_source='wikipedia',
-    #                      learning_rate=0.0001, epoch=50)
-    # evaluate_star_detect(r1=50, r2=500, padding_size=45, embedding_size=300, embedding_source='wikipedia',
-    #                      learning_rate=0.0001, epoch=100)
-    # evaluate_sent_detect(r1=50, r2=500, padding_size=45, embedding_size=200, embedding_source='twitter',
-    #                      learning_rate=0.0001, epoch=50)
-    # evaluate_star_detect(r1=50, r2=500, padding_size=45, embedding_size=200, embedding_source='twitter',
-    #                      learning_rate=0.0001, epoch=100)
-    # evaluate_sent_detect(r1=10, r2=500, padding_size=42, embedding_size=300, embedding_source='wikipedia',
-    #                      learning_rate=0.0001, epoch=25)
-    # evaluate_star_detect(r1=10, r2=500, padding_size=42, embedding_size=300, embedding_source='wikipedia',
-    #                      learning_rate=0.0001, epoch=100)
-    # evaluate_sent_detect(r1=10, r2=500, padding_size=42, embedding_size=200, embedding_source='twitter',
-    #                      learning_rate=0.0001, epoch=25)
-    # evaluate_star_detect(r1=10, r2=500, padding_size=42, embedding_size=200, embedding_source='twitter',
-    #                      learning_rate=0.0001, epoch=100)
+    evaluate_sent_detect(r1=50, r2=500, padding_size=45, embedding_size=300, embedding_source='wikipedia',
+                         learning_rate=0.0001, epoch=50)
+    evaluate_star_detect(r1=50, r2=500, padding_size=45, embedding_size=300, embedding_source='wikipedia',
+                         learning_rate=0.0001, epoch=50)
+    evaluate_sent_detect(r1=50, r2=500, padding_size=45, embedding_size=200, embedding_source='twitter',
+                         learning_rate=0.0001, epoch=50)
+    evaluate_star_detect(r1=50, r2=500, padding_size=45, embedding_size=200, embedding_source='twitter',
+                         learning_rate=0.0001, epoch=50)
+    evaluate_sent_detect(r1=10, r2=500, padding_size=42, embedding_size=300, embedding_source='wikipedia',
+                         learning_rate=0.0001, epoch=50)
+    evaluate_star_detect(r1=10, r2=500, padding_size=42, embedding_size=300, embedding_source='wikipedia',
+                         learning_rate=0.0001, epoch=50)
+    evaluate_sent_detect(r1=10, r2=500, padding_size=42, embedding_size=200, embedding_source='twitter',
+                         learning_rate=0.0001, epoch=50)
+    evaluate_star_detect(r1=10, r2=500, padding_size=42, embedding_size=200, embedding_source='twitter',
+                         learning_rate=0.0001, epoch=50)
     generate_sent_detect_att_weights(r1=50, r2=500, padding_size=45, embedding_size=300, embedding_source='wikipedia',
                                      learning_rate=0.0001, epoch=50)
     generate_star_detect_att_weights(r1=50, r2=500, padding_size=45, embedding_size=300, embedding_source='wikipedia',
-                                     learning_rate=0.0001, epoch=100)
+                                     learning_rate=0.0001, epoch=50)
     generate_sent_detect_att_weights(r1=50, r2=500, padding_size=45, embedding_size=200, embedding_source='twitter',
                                      learning_rate=0.0001, epoch=50)
     generate_star_detect_att_weights(r1=50, r2=500, padding_size=45, embedding_size=200, embedding_source='twitter',
-                                     learning_rate=0.0001, epoch=100)
+                                     learning_rate=0.0001, epoch=50)
     generate_sent_detect_att_weights(r1=10, r2=500, padding_size=42, embedding_size=300, embedding_source='wikipedia',
-                                     learning_rate=0.0001, epoch=25)
+                                     learning_rate=0.0001, epoch=50)
     generate_star_detect_att_weights(r1=10, r2=500, padding_size=42, embedding_size=300, embedding_source='wikipedia',
-                                     learning_rate=0.0001, epoch=100)
+                                     learning_rate=0.0001, epoch=50)
     generate_sent_detect_att_weights(r1=10, r2=500, padding_size=42, embedding_size=200, embedding_source='twitter',
-                                     learning_rate=0.0001, epoch=25)
+                                     learning_rate=0.0001, epoch=50)
     generate_star_detect_att_weights(r1=10, r2=500, padding_size=42, embedding_size=200, embedding_source='twitter',
-                                     learning_rate=0.0001, epoch=100)
+                                     learning_rate=0.0001, epoch=50)
