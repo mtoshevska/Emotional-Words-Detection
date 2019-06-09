@@ -155,15 +155,89 @@ def plot_review_length_distribution(lengths_file):
                       'Number of reviews', 'Number of reviews')
 
 
+def load_values(file_name):
+    return pd.read_table(file_name, sep=',')
+
+
+def plot_graph_loss(values, model_name):
+    data = pd.DataFrame()
+    data['epoch'] = list(values['epoch'].get_values() + 1) + list(values['epoch'].get_values() + 1)
+    data['loss name'] = ['training'] * len(values) + ['validation'] * len(values)
+    data['loss'] = list(values['loss'].get_values()) + list(values['val_loss'].get_values())
+    sns.set(style='darkgrid', context='poster', font='Verdana')
+    f, ax = plt.subplots()
+    sns.lineplot(x='epoch', y='loss', hue='loss name', style='loss name', dashes=False, data=data, palette='Set2')
+    ax.set_ylabel('Loss')
+    ax.set_xlabel('Epoch')
+    ax.legend().texts[0].set_text('')
+    plt.title(model_name)
+    plt.show()
+
+
+def plot_graph_f1_scores(values, model_name):
+    data = pd.DataFrame()
+    data['review'] = list(range(values.count()[0])) * 4
+    data['cutoff'] = ['top 5'] * values.count()[0] + ['top 10'] * values.count()[0] + ['top 15'] * values.count()[0] + \
+                     ['top 20'] * values.count()[0]
+    data['score'] = list(values['5'].get_values()) + list(values['10'].get_values()) + list(values['15'].get_values()) \
+                    + list(values['20'].get_values())
+    sns.set(style='darkgrid', context='poster', font='Verdana')
+    f, ax = plt.subplots()
+    sns.lineplot(x='review', y='score', hue='cutoff', style='cutoff', dashes=False, data=data, palette='Set2')
+    ax.set_ylabel('Score')
+    ax.set_xlabel('Review')
+    ax.legend().texts[0].set_text('')
+    plt.title(model_name)
+    plt.show()
+
+
+def print_f1_scores(model_names):
+    for model_name in model_names:
+        print(f'===== {model_name}')
+        data = load_values(f'data/{model_name}.csv')
+        top_5_avg = round(np.average(data['jaccard_5'].get_values()), 5)
+        top_10_avg = round(np.average(data['jaccard_10'].get_values()), 5)
+        top_15_avg = round(np.average(data['jaccard_15'].get_values()), 5)
+        top_20_avg = round(np.average(data['jaccard_20'].get_values()), 5)
+        pearson_avg = round(np.average([d for d in data['pearson'].get_values() if not np.isnan(d)]), 5)
+        kendalltau_avg = round(np.average([d for d in data['kendalltau'].get_values() if not np.isnan(d)]), 5)
+        print(f'======== jaccard top 5: {top_5_avg}')
+        print(f'======== jaccard top 10: {top_10_avg}')
+        print(f'======== jaccard top 15: {top_15_avg}')
+        print(f'======== jaccard top 20: {top_20_avg}')
+        print(f'======== pearson: {pearson_avg}')
+        print(f'======== kendalltau: {kendalltau_avg}')
+        print()
+    print()
+
+
 if __name__ == '__main__':
     # print_review_statistic('data/yelp_reviews_filtered.json')
     # plot_user_review_frequencies()
     # plot_review_length_distribution('data/reviews_length.csv')
-    plot_review_length_distribution('data/reviews_length_50_500.csv')
-    plot_review_length_distribution('data/reviews_length_filtered_50_500.csv')
-    print_review_length_statistic('data/reviews_length_50_500.csv', 'data/reviews_length_filtered_50_500.csv')
-    plot_review_length_distribution('data/reviews_length_10_500.csv')
-    plot_review_length_distribution('data/reviews_length_filtered_10_500.csv')
-    print_review_length_statistic('data/reviews_length_10_500.csv', 'data/reviews_length_filtered_10_500.csv')
+    # plot_review_length_distribution('data/reviews_length_50_500.csv')
+    # plot_review_length_distribution('data/reviews_length_filtered_50_500.csv')
+    # print_review_length_statistic('data/reviews_length_50_500.csv', 'data/reviews_length_filtered_50_500.csv')
+    # plot_review_length_distribution('data/reviews_length_10_500.csv')
+    # plot_review_length_distribution('data/reviews_length_filtered_10_500.csv')
+    # print_review_length_statistic('data/reviews_length_10_500.csv', 'data/reviews_length_filtered_10_500.csv')
     # plot_word_frequencies_distribution('data/vocabulary_full_frequencies_50_500.pkl')
     # plot_word_frequencies_distribution('data/vocabulary_full_frequencies_10_500.pkl')
+    # plot_graph_loss(load_values('logs/SentDetect_50_500_w.log'), 'SentDetect 50-500 w')
+    # plot_graph_loss(load_values('logs/StarDetect_50_500_w.log'), 'StarDetect 50-500 w')
+    # plot_graph_loss(load_values('logs/SentDetect_50_500_t.log'), 'SentDetect 50-500 t')
+    # plot_graph_loss(load_values('logs/StarDetect_50_500_t.log'), 'StarDetect 50-500 t')
+    # plot_graph_loss(load_values('logs/SentDetect_10_500_w.log'), 'SentDetect 10-500 w')
+    # plot_graph_loss(load_values('logs/StarDetect_10_500_w.log'), 'StarDetect 10-500 w')
+    # plot_graph_loss(load_values('logs/SentDetect_10_500_t.log'), 'SentDetect 10-500 t')
+    # plot_graph_loss(load_values('logs/StarDetect_10_500_t.log'), 'StarDetect 10-500 t')
+    # plot_graph_f1_scores(load_values('data/SentDetect_50_500_w-50_nrc.csv'), 'SentDetect 50-500 w NRC')
+    # plot_graph_f1_scores(load_values('data/SentDetect_50_500_w-50_yelp.csv'), 'SentDetect 50-500 w Yelp')
+    print_f1_scores(['SentDetect_50_500_w-50_nrc', 'SentDetect_50_500_w-50_yelp',
+                     'SentDetect_50_500_t-50_nrc', 'SentDetect_50_500_t-50_yelp',
+                     'StarDetect_50_500_w-50_nrc', 'StarDetect_50_500_w-50_yelp',
+                     'StarDetect_50_500_t-50_nrc', 'StarDetect_50_500_t-50_yelp',
+                     'SentDetect_10_500_w-50_nrc', 'SentDetect_10_500_w-50_yelp',
+                     'SentDetect_10_500_t-50_nrc', 'SentDetect_10_500_t-50_yelp',
+                     'StarDetect_10_500_w-50_nrc', 'StarDetect_10_500_w-50_yelp',
+                     'StarDetect_10_500_t-50_nrc', 'StarDetect_10_500_t-50_yelp'])
